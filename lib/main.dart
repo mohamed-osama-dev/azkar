@@ -1,174 +1,59 @@
-import 'package:azkar/sebha.dart';
 import 'package:flutter/material.dart';
-import 'materialList.dart';
-import 'zikrScreen.dart';
+import 'package:provider/provider.dart';
+
+import 'core/routes/app_router.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
+import 'data/datasources/azkar_local_datasource.dart';
+import 'data/repositories/azkar_repository_impl.dart';
+import 'domain/usecases/get_all_azkar_usecase.dart';
+import 'presentation/providers/azkar_provider.dart';
+import 'presentation/providers/sebha_provider.dart';
+import 'presentation/providers/settings_provider.dart';
+import 'presentation/providers/zikr_progress_provider.dart';
 
 void main() {
-  runApp(const MyApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const AzkarApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class AzkarApp extends StatelessWidget {
+  const AzkarApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Homepage(),
-    );
-  }
-}
+    final datasource = AzkarLocalDatasource();
+    final repository = AzkarRepositoryImpl(datasource);
+    final getAllAzkarUseCase = GetAllAzkarUseCase(repository);
 
-class Homepage extends StatefulWidget {
-  const Homepage({super.key});
-
-  @override
-  State<Homepage> createState() => _HomepageState();
-}
-
-class _HomepageState extends State<Homepage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // backgroundColor: const Color.fromARGB(255, 42, 158, 117),
-      appBar: AppBar(
-        backgroundColor: Colors.teal,
-        elevation: 4,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12.0),
-          child: Image.asset(
-            'images/beads.png',
-            width: 36,
-            height: 36,
-            fit: BoxFit.contain,
-          ),
-        ),
-        centerTitle: true,
-        title: const Text(
-          'أذكار',
-          style: TextStyle(
-            fontSize: 33,
-            fontStyle: FontStyle.italic,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                blurRadius: 2,
-                color: Colors.black38,
-                offset: Offset(1.5, 2.5),
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            ListView.builder(
-              shrinkWrap: true,
-              itemCount: azkarr.length,
-              itemBuilder: (context, index) {
-                return Card(
-                  color: const Color.fromARGB(255, 57, 198, 69),
-                  margin: const EdgeInsets.fromLTRB(8, 14, 8, 0),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 8,
-                      horizontal: 16,
-                    ),
-                    leading: CircleAvatar(
-                      backgroundColor: const Color.fromARGB(255, 57, 198, 69),
-
-                      minRadius: 10,
-                      maxRadius: 25,
-                      child: Image.asset(
-                        azkarr[index].image,
-                        fit: BoxFit.cover,
-                      ),
-                      // backgroundImage: AssetImage(azkarr[index].image),
-                    ),
-                    title: Center(
-                      child: Text(
-                        azkarr[index].title,
-                        style: const TextStyle(
-                          fontSize: 25,
-                          fontStyle: FontStyle.italic,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 2,
-                              color: Colors.black38,
-                              offset: Offset(1.5, 2.5),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios_rounded),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (context) => ZikrType(
-                          name: azkarr[index].title,
-                          zcontent: azkarr[index].content,
-                        ),
-                      ));
-                    },
-                  ),
-                );
-              },
-            ),
-            Card(
-              color: const Color.fromARGB(255, 57, 198, 69),
-              margin: const EdgeInsets.fromLTRB(8, 14, 8, 0),
-              child: ListTile(
-                onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const Sebaha(),
-                  ));
-                },
-                contentPadding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 16,
-                ),
-                leading: CircleAvatar(
-                  backgroundColor: const Color.fromARGB(255, 57, 198, 69),
-                  minRadius: 10,
-                  maxRadius: 25,
-                  child: Image.asset(
-                    "images/tasbih.png",
-                    fit: BoxFit.cover,
-                  ),
-                  // backgroundImage: AssetImage(azkarr[index].image),
-                ),
-                title: const Center(
-                  child: Text(
-                    "سبحة | ذكر مطلق ",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontStyle: FontStyle.italic,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      shadows: [
-                        Shadow(
-                          blurRadius: 2,
-                          color: Colors.black38,
-                          offset: Offset(1.5, 2.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios_rounded),
-              ),
-            ),
-            Card(
-              margin: const EdgeInsets.fromLTRB(8, 22, 8, 20),
-              clipBehavior: Clip.antiAliasWithSaveLayer,
-              child: Image.asset('images/hades.png'),
-            )
-          ],
-        ),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => SettingsProvider()),
+        ChangeNotifierProvider(
+            create: (_) => AzkarProvider(getAllAzkarUseCase)),
+        ChangeNotifierProvider(create: (_) => ZikrProgressProvider()),
+        ChangeNotifierProvider(create: (_) => SebhaProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'أذكار',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode:
+                themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            initialRoute: AppRouter.splash,
+            onGenerateRoute: AppRouter.generateRoute,
+            builder: (context, child) {
+              return Directionality(
+                textDirection: TextDirection.rtl,
+                child: child!,
+              );
+            },
+          );
+        },
       ),
     );
   }
